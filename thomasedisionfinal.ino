@@ -10,6 +10,11 @@ int servoPin1 = 3;
 int servoPin2 = 5;
 int servoPin3 = 6;
 int servoPin4 = 9;
+Servo Servo1; 
+Servo Servo2; 
+Servo Servo3; 
+Servo Servo4; 
+const int inter_time = 1000;
 
 const int TRIGGER_PIN = A0;
 const int ECHO_PIN = A1;
@@ -19,8 +24,11 @@ int button2 = 4;
 
 int bottleTotal = 0;
 int i = 0;
+int timeLeft = 10;
+// Define variables for timing
+unsigned long previousMillis = 0;
+const long interval = 1000; // 1 second interval
 // Create a servo object 
-Servo Servo1; 
 void setup() { 
   Serial.begin(9600);
   pinMode(2, INPUT);
@@ -29,8 +37,14 @@ void setup() {
   
   // Turn builtin LED off
   digitalWrite(LED_BUILTIN, LOW);
-   // We need to attach the servo to the used pin number 
-   Servo1.attach(servoPin1); 
+  Servo1.attach(servoPin1);
+  Servo2.attach(servoPin2); 
+  Servo3.attach(servoPin3); 
+  Servo4.attach(servoPin4); 
+  pinMode (TRIGGER_PIN, OUTPUT);
+  pinMode (ECHO_PIN, INPUT);
+
+  
 
      Config_Init();
   LCD_Init();
@@ -48,30 +62,86 @@ void setup() {
   Paint_DrawString_EN(1, 50, "Load Water Bottle?", &Font20, 0xFFFF, 0x0000);
  // Paint_DrawImage(gImage_40X40, 50, 50, 40, 40); 
   Paint_DrawCircle(20, 110, 15, RED, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-  Paint_DrawCircle(120, 110, 15, GREEN, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+  Paint_DrawString_EN(15, 106, "NO", &Font8, 0xFFFF, 0x0000);
+  Paint_DrawCircle(118, 110, 15, GREEN, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+  Paint_DrawString_EN(110, 105, "YES", &Font8, 0xFFFF, 0x0000);
 }
 void loop(){ 
-   // Make servo go to 0 degrees 
-   if(digitalRead(4) == HIGH) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    
-    i = 1;
-  } else {
-    digitalWrite(LED_BUILTIN, LOW);
-    i = 0;
-  }
+  unsigned long duration;
+  float distance;
+  digitalWrite(TRIGGER_PIN, HIGH);
+  delayMicroseconds(1000);
+  digitalWrite(TRIGGER_PIN, LOW);
+  duration = pulseIn (ECHO_PIN, HIGH);
+  Serial.println(duration);
+  distance = (duration / 2.0) / 29.0;
+  Serial.print(distance);
+  Serial.println(" cm");
+  delay(inter_time);
 
-  if(i = 1){
-    delay(100);
-    Servo1.write(0); 
-    delay(1000); 
-    Servo1.write(90); 
-    delay(1000); 
-    Servo1.write(180); 
-    delay(1000); 
-    Serial.write("on");
-    i = 0;
+  if(distance - 2000 < 50 && distance - 2000 > -2050 ){
+    bottleTotal++;
+    Serial.println(bottleTotal);
+    Paint_DrawCircle(69, 43, 12, WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+    Paint_DrawNum  (60, 37 ,bottleTotal,  &Font16,    0xFFFF,   0x000f);
   }
+    if(digitalRead(2) == HIGH) {
+      moveServo();
+      Serial.println("Move Servo");
+      delay(10000);
 
+    } else {
+      digitalWrite(LED_BUILTIN, LOW);
+            Serial.println("not Move Servo");
+    }
+
+
+  }
  
-}
+ void moveServo(){
+    LCD_Clear(WHITE);
+    Paint_DrawString_EN(1, 1, "Please Input Water Bottle", &Font16, 0xFFFF, 0x0000);
+    Paint_DrawString_EN(1, 50, "Time Left:", &Font20, 0xFFFF, 0x0000);
+    while(timeLeft > 0){
+    unsigned long currentMillis = millis();
+
+  // Check if 1 second has passed
+     if (currentMillis - previousMillis >= interval) {
+    // Save the last time you blinked the LED
+    previousMillis = currentMillis;
+
+    // Decrease the variable by 1
+    timeLeft--;
+    Serial.println(timeLeft);
+
+    Paint_DrawCircle(60, 37, 12, WHITE, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+    Paint_DrawNum  (60, 37 ,timeLeft,  &Font16,    0xFFFF,   0x000f);
+     }
+    }
+    Servo1.write(0);
+    delay(1000);
+    Servo2.write(90); 
+    delay(1000);
+    Servo3.write(180); 
+    delay(1000);
+    Servo4.write(0);  
+    delay(1000);
+    Servo1.write(90);
+    delay(1000);
+    Servo2.write(180); 
+    delay(1000);
+    Servo3.write(90); 
+    delay(1000);
+    Servo4.write(120);  
+    delay(1000);
+    Paint_Clear(WHITE);
+    Paint_DrawString_EN(1, 1, "Current number of bottles:", &Font16, 0xFFFF, 0x0000);
+    Paint_DrawNum  (60, 37 ,bottleTotal,  &Font16,    0xFFFF,   0x000f);
+    Paint_DrawString_EN(1, 50, "Load Water Bottle?", &Font20, 0xFFFF, 0x0000);
+    Paint_DrawCircle(20, 110, 15, RED, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+    Paint_DrawString_EN(15, 106, "NO", &Font8, 0xFFFF, 0x0000);
+    Paint_DrawCircle(118, 110, 15, GREEN, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+    Paint_DrawString_EN(110, 105, "YES", &Font8, 0xFFFF, 0x0000);
+    timeLeft = 10;
+ }
+ 
